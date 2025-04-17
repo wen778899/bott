@@ -1,20 +1,26 @@
 {
-  "name": "telegram-bot",
+  "name": "vpn-telegram-bot",
   "version": "1.0.0",
-  "description": "A Telegram Bot deployed using Node.js",
+  "description": "A Telegram Bot for VPN subscription management and node conversion",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "keywords": [
     "telegram",
+    "vpn",
     "bot",
-    "nodejs"
+    "clash",
+    "v2ray"
   ],
   "author": "wen778899",
   "license": "MIT",
   "dependencies": {
+    "axios": "^1.4.0",
     "express": "^4.18.2",
-    "node-telegram-bot-api": "^0.61.0"
+    "js-yaml": "^4.1.0",
+    "node-telegram-bot-api": "^0.61.0",
+    "ping": "^0.4.0",
+    "qrcode": "^1.5.0"
   }
 }
