@@ -5,21 +5,37 @@ const yaml = require('js-yaml');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const ping = require('ping');
+const HttpsProxyAgent = require('https-proxy-agent');
 
-const TOKEN = process.env.BOT_TOKEN;
-const bot = new TelegramBot(TOKEN); // 创建 Telegram Bot 实例
+// 环境变量设置
+const TOKEN = process.env.BOT_TOKEN; // Telegram Bot Token
+const PROXY_URL = process.env.PROXY_URL || ''; // 代理 URL（如有需要）
+const PORT = process.env.PORT || 3000; // 服务器端口
 
+// 创建 Express 应用
 const app = express();
 app.use(express.json());
 
-// Telegram Webhook
+// 创建 Telegram Bot 实例
+const botOptions = PROXY_URL
+  ? { webHook: true, request: { agent: new HttpsProxyAgent(PROXY_URL) } }
+  : { webHook: true };
+const bot = new TelegramBot(TOKEN, botOptions);
+
+// 设置 Webhook
+const WEBHOOK_URL = `https://bott-ynv4.onrender.com/bot${TOKEN}`;
+bot.setWebHook(WEBHOOK_URL);
+
+// 测试根路由
+app.get('/', (req, res) => res.send('Telegram Bot is running...'));
+
+// Telegram Webhook 路由
 app.post(`/bot${TOKEN}`, (req, res) => {
-  const update = req.body;
-  bot.processUpdate(update);
+  bot.processUpdate(req.body);
   res.sendStatus(200);
 });
 
-// 订阅转换功能
+// 功能 1: Clash/V2Ray 节点订阅转换
 bot.onText(/\/convert (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const subscriptionUrl = match[1];
@@ -40,7 +56,7 @@ bot.onText(/\/convert (.+)/, async (msg, match) => {
   }
 });
 
-// 节点测速功能
+// 功能 2: 节点测速
 bot.onText(/\/speedtest (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const subscriptionUrl = match[1];
@@ -67,23 +83,23 @@ bot.onText(/\/speedtest (.+)/, async (msg, match) => {
   }
 });
 
-// 节点筛选功能
+// 功能 3: 节点筛选
 bot.onText(/\/filter (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
-  const filters = match[1];
+  const filterKey = match[1];
 
   try {
     const response = await axios.get('<subscription_url>');
     const content = yaml.load(response.data);
 
-    const filteredNodes = content.proxies.filter(proxy => proxy.name.includes(filters));
+    const filteredNodes = content.proxies.filter(proxy => proxy.name.includes(filterKey));
     bot.sendMessage(chatId, `筛选结果:\n${JSON.stringify(filteredNodes, null, 2)}`);
   } catch (error) {
     bot.sendMessage(chatId, '筛选失败，请检查订阅内容格式。');
   }
 });
 
-// 生成节点二维码功能
+// 功能 4: 生成节点二维码
 bot.onText(/\/qrcode (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const subscriptionUrl = match[1];
@@ -92,31 +108,33 @@ bot.onText(/\/qrcode (.+)/, async (msg, match) => {
     const response = await axios.get(subscriptionUrl);
     const content = yaml.load(response.data);
 
-    content.proxies.forEach(async (proxy) => {
+    for (const proxy of content.proxies) {
       const nodeLink = `vmess://${Buffer.from(JSON.stringify(proxy)).toString('base64')}`;
       const qrCodeDataUrl = await QRCode.toDataURL(nodeLink);
 
       bot.sendPhoto(chatId, qrCodeDataUrl, { caption: `节点: ${proxy.name}` });
-    });
+    }
   } catch (error) {
     bot.sendMessage(chatId, '生成二维码失败，请检查订阅内容格式。');
   }
 });
 
-// 备份订阅功能
-bot.onText(/\/backup (.+)/, (msg, match) => {
+// 功能 5: 订阅备份
+bot.onText(/\/backup (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const subscriptionUrl = match[1];
 
-  axios.get(subscriptionUrl).then(response => {
+  try {
+    const response = await axios.get(subscriptionUrl);
     const filePath = `backups/${chatId}_backup.yaml`;
     fs.writeFileSync(filePath, response.data);
     bot.sendMessage(chatId, '订阅已备份！');
-  }).catch(() => {
+  } catch (error) {
     bot.sendMessage(chatId, '备份失败，请检查订阅链接。');
-  });
+  }
 });
 
+// 功能 6: 恢复备份
 bot.onText(/\/restore/, (msg) => {
   const chatId = msg.chat.id;
   const filePath = `backups/${chatId}_backup.yaml`;
@@ -128,8 +146,7 @@ bot.onText(/\/restore/, (msg) => {
   }
 });
 
-// 启动 Express 应用
-const PORT = process.env.PORT || 10000;
+// 启动服务器
 app.listen(PORT, () => {
   console.log(`Telegram Bot running on port ${PORT}`);
 });
