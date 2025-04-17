@@ -24,3 +24,6 @@
     "qrcode": "^1.5.0"
   }
 }
+"dependencies": {
+  "https-proxy-agent": "^5.0.1" // 您可以使用最新版本
+}
