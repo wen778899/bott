@@ -129,7 +129,7 @@ bot.onText(/\/restore/, (msg) => {
 });
 
 // 启动 Express 应用
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`Telegram Bot running on port ${PORT}`);
 });
