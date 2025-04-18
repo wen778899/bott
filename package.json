@@ -1,7 +1,7 @@
 {
-  "name": "render-worker-app",
+  "name": "render-node-app",
   "version": "1.0.0",
-  "description": "Converted Cloudflare Worker to Node.js for Render",
+  "description": "Cloudflare Worker script converted to Node.js for Render",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -11,6 +11,6 @@
     "node-fetch": "^3.3.1"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   }
 }
