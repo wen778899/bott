@@ -27,7 +27,9 @@ def index():
 @app.route(f"/bot{os.getenv('BOT_TOKEN')}", methods=["POST"])
 def webhook():
     """处理 Telegram 的 Webhook 请求"""
+    # 从 Telegram 的请求中解析更新
     update = Update.de_json(request.get_json(force=True), application.bot)
+    # 处理更新
     application.process_update(update)
     return "OK", 200
 
