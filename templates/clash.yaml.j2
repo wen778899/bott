@@ -4,7 +4,7 @@ proxies:
     type: {{ node.type }}
     server: {{ node.server }}
     port: {{ node.port }}
-    {% if node.type == 'hysteria' %}
+    {% if node.type == 'hysteria' or node.type == 'hysteria2' %}
     protocol: udp
     up: "100 Mbps"
     down: "100 Mbps"
@@ -12,14 +12,15 @@ proxies:
     uuid: {{ node.uuid }}
     alterId: 0
     cipher: auto
+    tls: true
     {% endif %}
     sni: {{ node.sni }}
     skip-cert-verify: true
 {% endfor %}
 
 proxy-groups:
-  - name: "Auto"
+  - name: "Auto-Select"
     type: url-test
-    proxies: {% for node in nodes %} "{{ node.name }}" {% if not loop.last %}, {% endif %} {% endfor %}
+    proxies: [{% for node in nodes %}"{{ node.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]
     url: "http://www.gstatic.com/generate_204"
     interval: 300
