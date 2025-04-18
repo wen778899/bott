@@ -7,14 +7,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # 主函数
 if __name__ == "__main__":
-    # 替换为你的 Telegram Bot Token
-    BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+    import os
+    from flask import Flask, request
 
-    # 创建应用程序实例
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
+    BOT_TOKEN = os.getenv("BOT_TOKEN")
+    WEBHOOK_URL = os.getenv("RENDER_EXTERNAL_URL")  # Render 提供的 URL
 
-    # 添加命令处理器
+    application = ApplicationBuilder().token(BOT_TOKEN).updater(None).build()
     application.add_handler(CommandHandler("start", start))
 
-    # 启动机器人
-    application.run_polling()
+    # 启用 Webhook
+    application.bot.set_webhook(WEBHOOK_URL)
+
+    # 创建 Flask 应用
+    app = Flask(__name__)
+
+    @app.route("/", methods=["POST"])
+    def webhook():
+        update = Update.de_json(request.get_json(force=True), application.bot)
+        application.process_update(update)
+        return "OK"
+
+    app.run(host="0.0.0.0", port=5000)
