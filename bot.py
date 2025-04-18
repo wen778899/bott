@@ -7,10 +7,8 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Hello! I'm your bot.")
 
-# 定义异步函数设置 Webhook
-async def setup_webhook(application):
-    WEBHOOK_URL = os.getenv("RENDER_EXTERNAL_URL")  # Render 提供的 URL
-    await application.bot.set_webhook(WEBHOOK_URL)
+# 创建 Flask 应用实例 (全局变量)
+app = Flask(__name__)
 
 # 主函数
 if __name__ == "__main__":
@@ -18,16 +16,17 @@ if __name__ == "__main__":
     if not BOT_TOKEN:
         raise ValueError("Bot Token is not set in environment variables")
 
-    # 创建应用程序实例
+    # 创建 Telegram 应用实例
     application = ApplicationBuilder().token(BOT_TOKEN).updater(None).build()
     application.add_handler(CommandHandler("start", start))
 
-    # 启用 Webhook
-    import asyncio
-    asyncio.run(setup_webhook(application))  # 使用 asyncio 调用异步函数
+    # 设置 Webhook
+    WEBHOOK_URL = os.getenv("RENDER_EXTERNAL_URL")
+    if not WEBHOOK_URL:
+        raise ValueError("Webhook URL is not set in environment variables")
 
-    # 创建 Flask 应用
-    app = Flask(__name__)
+    import asyncio
+    asyncio.run(application.bot.set_webhook(WEBHOOK_URL))
 
     @app.route("/", methods=["POST"])
     def webhook():
@@ -35,4 +34,5 @@ if __name__ == "__main__":
         application.process_update(update)
         return "OK"
 
+    # 启动 Flask 应用
     app.run(host="0.0.0.0", port=5000)
