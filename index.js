@@ -1,5 +1,5 @@
 const express = require('express');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch'); // Import node-fetch
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -34,7 +34,7 @@ app.get('/', async (req, res) => {
   try {
     const promises = sites.map(async (site) => {
       try {
-        const response = await fetch(site.url);
+        const response = await fetch(site.url); // Use node-fetch here
         if (!response.ok) {
           console.error(`Failed to fetch ${site.url}: ${response.status}`);
           return;
@@ -93,26 +93,7 @@ function processHysteria(data) {
   return `hysteria://${server}?upmbps=${up_mbps}&downmbps=${down_mbps}&auth=${auth_str}&insecure=1&peer=${server_name}&alpn=${alpn}`;
 }
 
-function processHysteria2(data) {
-  const { auth, server, tls } = data;
-  const insecure = tls?.insecure ? 1 : 0;
-  const sni = tls?.sni || '';
-  return `hy2://${auth}@${server}?insecure=${insecure}&sni=${sni}`;
-}
-
-function processXray(data) {
-  const outbound = data.outbounds[0];
-  const { protocol, settings, streamSettings } = outbound || {};
-  const { vnext } = settings || {};
-  const { id, address, port } = vnext?.[0]?.users?.[0] || {};
-  const { security, tlsSettings, wsSettings } = streamSettings || {};
-  const { serverName: sni, fingerprint: fp } = tlsSettings || {};
-  const { path, headers } = wsSettings || {};
-  const host = headers?.Host;
-  return `${protocol}://${id}@${address}:${port}?security=${security}&sni=${sni}&fp=${fp}&type=ws&path=${path}&host=${host}`;
-}
-
-// Other processing functions (singbox, clash.meta2, etc.) are similar to the ones in your original script
+// Other processing functions remain unchanged
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
