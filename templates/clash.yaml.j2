@@ -1,0 +1,25 @@
+proxies:
+{% for node in nodes %}
+  - name: "{{ node.name }}"
+    type: {{ node.type }}
+    server: {{ node.server }}
+    port: {{ node.port }}
+    {% if node.type == 'hysteria' %}
+    protocol: udp
+    up: "100 Mbps"
+    down: "100 Mbps"
+    {% elif node.type == 'xray' %}
+    uuid: {{ node.uuid }}
+    alterId: 0
+    cipher: auto
+    {% endif %}
+    sni: {{ node.sni }}
+    skip-cert-verify: true
+{% endfor %}
+
+proxy-groups:
+  - name: "Auto"
+    type: url-test
+    proxies: {% for node in nodes %} "{{ node.name }}" {% if not loop.last %}, {% endif %} {% endfor %}
+    url: "http://www.gstatic.com/generate_204"
+    interval: 300
