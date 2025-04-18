@@ -12,7 +12,9 @@ async def setup_webhook(application):
     webhook_url = os.getenv("RENDER_EXTERNAL_URL")  # Render 提供的公开 URL
     if not webhook_url:
         raise ValueError("RENDER_EXTERNAL_URL is not set in environment variables")
-    await application.bot.set_webhook(webhook_url)
+    # 设置 Webhook URL，确保路径包含 /bot<TOKEN>
+    webhook_full_url = f"{webhook_url}/bot{os.getenv('BOT_TOKEN')}"
+    await application.bot.set_webhook(webhook_full_url)
 
 # 创建 Flask 应用
 app = Flask(__name__)
