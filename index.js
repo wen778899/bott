@@ -1,5 +1,5 @@
 const express = require('express');
-const fetch = require('node-fetch'); // Import node-fetch
+const fetch = require('node-fetch'); // Import node-fetch for fetch API
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -29,18 +29,18 @@ const sites = [
 // Set to store unique strings
 const uniqueStrings = new Set();
 
-// Home route to fetch and process URLs
+// Route to fetch and process URLs
 app.get('/', async (req, res) => {
   try {
     const promises = sites.map(async (site) => {
       try {
-        const response = await fetch(site.url); // Use node-fetch here
+        const response = await fetch(site.url); // Use node-fetch for fetching
         if (!response.ok) {
           console.error(`Failed to fetch ${site.url}: ${response.status}`);
           return;
         }
 
-        const data = await response.json();
+        const data = site.url.endsWith('.json') ? await response.json() : await response.text();
         const formattedString = processData(site.type, data);
         if (formattedString) {
           uniqueStrings.add(formattedString);
@@ -51,6 +51,8 @@ app.get('/', async (req, res) => {
     });
 
     await Promise.all(promises);
+
+    // Create HTML response
     const finalStrings = [...uniqueStrings];
     const htmlContent = finalStrings.map((str) => `<p>${str}</p>`).join('\n');
 
@@ -87,14 +89,67 @@ function processData(type, data) {
   }
 }
 
-// Define individual processing functions (same as in your original script)
+// Define individual processing functions
 function processHysteria(data) {
   const { server, up_mbps, down_mbps, auth_str, server_name, alpn } = data;
   return `hysteria://${server}?upmbps=${up_mbps}&downmbps=${down_mbps}&auth=${auth_str}&insecure=1&peer=${server_name}&alpn=${alpn}`;
 }
 
-// Other processing functions remain unchanged
+function processHysteria2(data) {
+  const { auth, server, tls } = data;
+  const insecure = tls?.insecure ? 1 : 0;
+  const sni = tls?.sni || '';
+  return `hy2://${auth}@${server}?insecure=${insecure}&sni=${sni}`;
+}
 
+function processXray(data) {
+  const outbound = data.outbounds[0];
+  const { protocol, settings, streamSettings } = outbound || {};
+  const { vnext } = settings || {};
+  const { id, address, port } = vnext?.[0]?.users?.[0] || {};
+  const { security, tlsSettings, wsSettings } = streamSettings || {};
+  const { serverName: sni, fingerprint: fp } = tlsSettings || {};
+  const { path, headers } = wsSettings || {};
+  const host = headers?.Host;
+  return `${protocol}://${id}@${address}:${port}?security=${security}&sni=${sni}&fp=${fp}&type=ws&path=${path}&host=${host}`;
+}
+
+function processSingbox(data) {
+  const { server, server_port, up_mbps, down_mbps, auth_str, tls } = data.outbounds[0];
+  const { server_name, alpn } = tls || {};
+  return `hysteria://${server}:${server_port}?upmbps=${up_mbps}&downmbps=${down_mbps}&auth=${auth_str}&insecure=1&peer=${server_name}&alpn=${alpn?.[0]}`;
+}
+
+function processClashMeta2(data) {
+  const proxies = data.proxies || [];
+  return proxies.map(proxy => {
+    const { name, type, server, port, cipher, password, tls } = proxy;
+    const insecure = tls?.insecure ? 1 : 0;
+    const sni = tls?.sni || '';
+    return `clash.meta2://${name}@${server}:${port}?type=${type}&cipher=${cipher}&password=${encodeURIComponent(password)}&insecure=${insecure}&sni=${sni}`;
+  }).join('\n');
+}
+
+function processJuicity(data) {
+  const { server, port, password, method, obfs, obfs_param } = data;
+  return `juicity://${server}:${port}?password=${encodeURIComponent(password)}&method=${method}&obfs=${obfs}&obfs_param=${encodeURIComponent(obfs_param)}`;
+}
+
+function processNaiveproxy(data) {
+  const { server, port, username, password, tls } = data;
+  const insecure = tls?.insecure ? 1 : 0;
+  const sni = tls?.sni || '';
+  return `naiveproxy://${username}:${encodeURIComponent(password)}@${server}:${port}?insecure=${insecure}&sni=${sni}`;
+}
+
+function processMieru(data) {
+  const { server, port, key, protocol, tls, path } = data;
+  const insecure = tls?.insecure ? 1 : 0;
+  const sni = tls?.sni || '';
+  return `mieru://${key}@${server}:${port}?protocol=${protocol}&insecure=${insecure}&sni=${sni}&path=${encodeURIComponent(path)}`;
+}
+
+// Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
