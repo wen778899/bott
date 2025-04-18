@@ -22,12 +22,12 @@ def index():
     """处理健康检查请求"""
     return "Bot is running", 200
 
-@app.route("/", methods=["POST"])
+@app.route(f"/bot{os.getenv('BOT_TOKEN')}", methods=["POST"])
 def webhook():
     """处理 Telegram 的 Webhook 请求"""
     update = Update.de_json(request.get_json(force=True), application.bot)
     application.process_update(update)
-    return "OK"
+    return "OK", 200
 
 # 主程序入口
 if __name__ == "__main__":
