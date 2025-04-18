@@ -1,12 +1,14 @@
 from flask import Flask, jsonify, render_template
 import requests
+import yaml  # 新增导入
 from config_parser import parse_configs, categorize_nodes
 
 app = Flask(__name__)
 
 CONFIG_URLS = [
-    "https://www.gitlabip.xyz/Alvin9999/PAC/master/backup/img/1/2/ipp/singbox/1/config.json",
-    "https://gitlab.com/free9999/ipupdate/-/raw/master/backup/img/1/2/ipp/clash.meta2/1/config.yaml",  # 示例 Clash 链接
+    "https://www.gitlabip.xyz/Alvin9999/PAC/master/backup/img/1/2/ipp/clash.meta2/1/config.yaml",
+    "https://gitlab.com/free9999/ipupdate/-/raw/master/backup/img/1/2/ipp/hysteria/1/config.json",
+    # 其他 URL...
 ]
 
 @app.route('/')
@@ -20,11 +22,10 @@ def generate_subscription(protocol):
         try:
             response = requests.get(url, timeout=10)
             if response.status_code == 200:
-                # 根据文件类型解析 JSON/YAML
+                # 根据文件类型解析
                 if url.endswith('.json'):
                     config_data = response.json()
                 elif url.endswith('.yaml') or url.endswith('.yml'):
-                    import yaml
                     config_data = yaml.safe_load(response.text)
                 else:
                     continue
@@ -36,7 +37,7 @@ def generate_subscription(protocol):
     
     categorized = categorize_nodes(nodes)
     if protocol == "clash":
-        return render_template('clash.yaml.j2', nodes=categorized.get('clash.meta2', []))  # 协议名需一致
+        return render_template('clash.yaml.j2', nodes=categorized.get('clash.meta2', []))
     else:
         return jsonify(categorized)
 
